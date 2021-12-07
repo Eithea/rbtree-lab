@@ -1,5 +1,6 @@
 #include "rbtree.h"
 
+
 void main()
 {
     rbtree *t = new_rbtree();
@@ -11,11 +12,11 @@ void main()
     rbtree_insert(t, 6);
     rbtree_insert(t, 4);
     rbtree_insert(t, 5);
-    node_t *f = rbtree_find(t, 4);
-    rbtree_erase(t, f);
-    f = rbtree_find(t, 1);
-    rbtree_erase(t, f);
-    f = rbtree_find(t, 8);
-    rbtree_erase(t, f);
     testprint(t, t->root);
+    key_t *res = calloc(4, sizeof(key_t));
+    rbtree_to_array(t, res, 4);
+    for (int i = 0; i < 4; i++)
+{
+    printf("i= %d, 값 :  %d\n", i, res[i]);
+}
 }

@@ -21,6 +21,7 @@ void delete(rbtree *, node_t *);
 void rotationD(rbtree *, node_t *);
 void rebalance(rbtree *, node_t *);
 void replace(rbtree *, node_t *);
+int inorder(const rbtree *, node_t *, key_t *, int, const size_t);
 
 
 void testprint(const rbtree *, node_t *);
@@ -28,153 +29,155 @@ void testprint(const rbtree *, node_t *);
 
 node_t *NODE(int value)
 { 
-  node_t *n = malloc(sizeof(node_t));
-  n->key = value;
-  n->color = RBTREE_RED;
-  n->parent = NULL;
-  n->left = NULL;
-  n->right = NULL;
-  return n;
+    node_t *n = malloc(sizeof(node_t));
+    n->key = value;
+    n->color = RBTREE_RED;
+    n->parent = NULL;
+    n->left = NULL;
+    n->right = NULL;
+    return n;
 }
 
 rbtree *new_rbtree(void) 
 {
-  rbtree *p = (rbtree *)calloc(1, sizeof(rbtree));
-  node_t *n = malloc(sizeof(node_t));
-  n->key = 0;
-  n->color = RBTREE_BLACK;
-  n->parent = NULL;
-  n->left = NULL;
-  n->right = NULL;
-  p->nil = n;
-  p->root = n;
-  return p;
+    rbtree *p = (rbtree *)calloc(1, sizeof(rbtree));
+    node_t *n = malloc(sizeof(node_t));
+    n->key = 0;
+    n->color = RBTREE_BLACK;
+    n->parent = NULL;
+    n->left = NULL;
+    n->right = NULL;
+    p->nil = n;
+    p->root = n;
+    return p;
 }
 
 node_t *searchdown(const rbtree *t, node_t *N, key_t value)
 {
-  if (N == t->nil || N->key == value)
-      return N;
-  if (N->key < value)
-      searchdown(t, N->right, value);
-  else
-      searchdown(t, N->left, value);
+    if (N->key == value)
+        return N;
+    if (N == t->nil)
+        return NULL;
+    if (N->key < value)
+        searchdown(t, N->right, value);
+    else
+        searchdown(t, N->left, value);
 }
 
 void falldown(rbtree *t, node_t * I, node_t *N, node_t *P)
 {
-  if (N == t->nil)
-  {
-      I->parent = P;
-      I->left = t->nil;
-      I->right = t->nil;
-      if (P != t->nil && P->key < I->key)
-          P->right = I;
-      else if (P != t->nil && P->key >= I->key)
-          P->left = I;
-      else
-          t->root = I;
-  }
-  else
-  {
-      if (N->key < I->key)
-          falldown(t, I, N->right, N);
-      else
-          falldown(t, I, N->left, N);
-  }
+    if (N == t->nil)
+    {
+        I->parent = P;
+        I->left = t->nil;
+        I->right = t->nil;
+        if (P != t->nil && P->key < I->key)
+            P->right = I;
+        else if (P != t->nil && P->key >= I->key)
+            P->left = I;
+        else
+            t->root = I;
+    }
+    else
+    {
+        if (N->key < I->key)
+            falldown(t, I, N->right, N);
+        else
+            falldown(t, I, N->left, N);
+    }
 }
 
 node_t *grandparent(rbtree *t, node_t *N)
 {
-  if (N == t->nil || N->parent == t->nil)
-      return t->nil;
-  return N->parent->parent;
+    if (N == t->nil || N->parent == t->nil)
+        return t->nil;
+    return N->parent->parent;
 }
 
 node_t *uncle(rbtree *t, node_t *N)
 {
-  node_t *G = grandparent(t, N);
-  if (G == t->nil)
-      return t->nil;
-  if (G->right == N->parent)
-      return G->left;
-  return G->right;
+    node_t *G = grandparent(t, N);
+    if (G == t->nil)
+        return t->nil;
+    if (G->right == N->parent)
+        return G->left;
+    return G->right;
 }
 
 node_t *bro(rbtree *t, node_t *N)
 {
-  if (N == t->nil || N->parent == t->nil)
-      return NULL;
-  if (N == N->parent->left)
-      return N->parent->right;
-  return N->parent->left;
+    if (N == t->nil || N->parent == t->nil)
+        return NULL;
+    if (N == N->parent->left)
+        return N->parent->right;
+    return N->parent->left;
 }
 
 node_t *child(rbtree *t, node_t *N)
 {
-  node_t *C;
-  if (N->left != t->nil)
-      C = N->left;
-  else if (N->right != t->nil)
-      C = N->right;
-  else
-  {
-      C = NODE(0);
-      C->color = RBTREE_BLACK;
-      C->parent = N;
-  }
-  return C;
+    node_t *C;
+    if (N->left != t->nil)
+        C = N->left;
+    else if (N->right != t->nil)
+        C = N->right;
+    else
+    {
+        C = NODE(0);
+        C->color = RBTREE_BLACK;
+        C->parent = N;
+    }
+    return C;
 }
 
 void insert(rbtree *t, node_t *I)
 {
-  falldown(t, I, t->root, t->nil);
-  resort(t, I);
+    falldown(t, I, t->root, t->nil);
+    resort(t, I);
 }
 
 void resort(rbtree *t, node_t *N)
 {
-  if (N->parent == t->nil)
-      N->color = RBTREE_BLACK;
-  else if (N->parent->color == RBTREE_RED)
-      recolor(t, N);
+    if (N->parent == t->nil)
+        N->color = RBTREE_BLACK;
+    else if (N->parent->color == RBTREE_RED)
+        recolor(t, N);
 }
 
 void recolor(rbtree *t, node_t *N)
 {
-  node_t *U = uncle(t, N);
-  node_t *G = grandparent(t, N);
-  if (U != t->nil && U->color == RBTREE_RED)
-  {
-      U->color = RBTREE_BLACK;
-      G->color = RBTREE_RED;
-      N->parent->color = RBTREE_BLACK;
-      resort(t, G);
-  }
-  else
-      rotation(t, N);
+    node_t *U = uncle(t, N);
+    node_t *G = grandparent(t, N);
+    if (U != t->nil && U->color == RBTREE_RED)
+    {
+        U->color = RBTREE_BLACK;
+        G->color = RBTREE_RED;
+        N->parent->color = RBTREE_BLACK;
+        resort(t, G);
+    }
+    else
+        rotation(t, N);
 }
 
 void rotation(rbtree *t, node_t *N)
 {
-  node_t *G = grandparent(t, N);
-  if (G->right == N->parent && N == N->parent->left)
-  {
-      cw(t, N);
-      N = N->right;
-  }
-  else if (G->left == N->parent && N == N->parent->right)
-  {
-      ccw(t, N);
-      N = N->left;
-  }
-  G = grandparent(t, N);
-  G->color = RBTREE_RED;
-  N->parent->color = RBTREE_BLACK;
-  if (N == N->parent->left)
-      cw(t, N->parent);
-  else
-      ccw(t, N->parent);
+    node_t *G = grandparent(t, N);
+    if (G->right == N->parent && N == N->parent->left)
+    {
+        cw(t, N);
+        N = N->right;
+    }
+    else if (G->left == N->parent && N == N->parent->right)
+    {
+        ccw(t, N);
+        N = N->left;
+    }
+    G = grandparent(t, N);
+    G->color = RBTREE_RED;
+    N->parent->color = RBTREE_BLACK;
+    if (N == N->parent->left)
+        cw(t, N->parent);
+    else
+        ccw(t, N->parent);
 }
 
 void cw(rbtree *t, node_t *N)
@@ -348,64 +351,88 @@ void replace(rbtree *t, node_t *N)
     }
 }
 
+int inorder(const rbtree *t, node_t *N, key_t *arr, int i, const size_t n)
+{   
+    int index = i;
+    if (N->left != t->nil)
+    {
+        index = inorder(t, N->left, arr, i, n);
+    }
+    if (index < n)
+    {
+        arr[index] = N->key;
+        index = index + 1;
+    }
+    else
+        return 0;
+    if (N->right != t->nil)
+        index = inorder(t, N->right, arr, index, n);
+    return index;
+}
+
+
 void delete_rbtree(rbtree *t) 
 {
-  // TODO: reclaim the tree nodes's memory
-  free(t);
+    while (t->root != t->nil)
+    {
+        rbtree_erase(t, t->root);
+    }
+    free(t->nil);
+    free(t);
 }
 
 node_t *rbtree_insert(rbtree *t, const key_t key) 
 {
-  node_t *I = NODE(key);
-  insert(t, I);
-  return t->root;
+    node_t *I = NODE(key);
+    insert(t, I);
+    return t->root;
 }
 
 node_t *rbtree_find(const rbtree *t, const key_t key) 
 {
-  node_t *f = searchdown(t, t->root, key);
-  return f;
+    node_t *f = searchdown(t, t->root, key);
+    return f;
 }
 
 node_t *rbtree_min(const rbtree *t) 
 {
-  return leftest(t, t->root);
+    return leftest(t, t->root);
 }
 
 node_t *rbtree_max(const rbtree *t) 
 {
-  return rightest(t, t->root);
+    return rightest(t, t->root);
 }
 
 int rbtree_erase(rbtree *t, node_t *p) 
 {
-  node_t *N = searchdown(t, t->root, p->key);
-  node_t *D;
-  if (N == t->nil)
+    node_t *N = searchdown(t, t->root, p->key);
+    node_t *D;
+    if (N == t->nil)
     return 0;
-  if (N->left != t->nil && N->right != t->nil)
-  {
-      D = rightest(t, N->left);
-      N->key = D->key;
-  }
-  else
-      D = N;  
-  delete(t, D);
-  return 0;
+    if (N->left != t->nil && N->right != t->nil)
+    {
+        D = rightest(t, N->left);
+        N->key = D->key;
+    }
+    else
+        D = N;  
+    delete(t, D);
+    return 0;
 }
 
 int rbtree_to_array(const rbtree *t, key_t *arr, const size_t n) 
 {
-  // TODO: implement to_array
-  return 0;
+    inorder(t, t->root, arr, 0, n);
+    return 0;
 }
 
 void testprint(const rbtree *t, node_t *N)
 {
-  printf("값 : %d, 부모 : %d, 색 : %d\n", N->key, N->parent->key, N->color);
-  if (N->left != t->nil)
-      testprint(t, N->left);
-  if (N->right != t->nil)
-      testprint(t, N->right);
+    printf("값 : %d, 부모 : %d, 색 : %d\n", N->key, N->parent->key, N->color);
+    if (N->left != t->nil)
+        testprint(t, N->left);
+    if (N->right != t->nil)
+        testprint(t, N->right);
 }
 

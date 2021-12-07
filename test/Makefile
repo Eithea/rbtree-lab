@@ -1,10 +1,10 @@
 .PHONY: test
 
-CFLAGS=-I ../src -Wall -g
+CFLAGS=-I ../src -Wall -g -DSENTINEL
 
 test: test-rbtree
 	./test-rbtree
-	valgrind ./test-rbtree
+	valgrind -s --leak-check=full ./test-rbtree
 
 test-rbtree: test-rbtree.o ../src/rbtree.o
 
