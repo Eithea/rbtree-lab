@@ -59,9 +59,9 @@ node_t *searchdown(const rbtree *t, node_t *N, key_t value)
     if (N == t->nil)
         return NULL;
     if (N->key < value)
-        searchdown(t, N->right, value);
+        return searchdown(t, N->right, value);
     else
-        searchdown(t, N->left, value);
+        return searchdown(t, N->left, value);
 }
 
 void falldown(rbtree *t, node_t * I, node_t *N, node_t *P)
@@ -236,16 +236,17 @@ node_t *rightest(const rbtree *t, node_t *N)
 
 void delete(rbtree *t, node_t *N)
 {
-    
     node_t *C = child(t, N);
     if (N->parent == t->nil)
     {
         if (C->left == NULL)
             t->root = t->nil;
         else
+        {
             t->root = C;
             C->color = RBTREE_BLACK;
             C->parent = t->nil;
+        }
     }
     else if (N->color == RBTREE_RED)
     {
@@ -254,28 +255,31 @@ void delete(rbtree *t, node_t *N)
         else
             N->parent->right = t->nil;
     }
-    else if (N->color == RBTREE_BLACK && C->color == RBTREE_RED)
+    else if (N->color == RBTREE_BLACK) 
     {
-        C->parent = N->parent;
-        C->color = RBTREE_BLACK;
-        if (N == N->parent->left)
-            N->parent->left = C;
+        if (C->color == RBTREE_RED)
+        {
+            C->parent = N->parent;
+            C->color = RBTREE_BLACK;
+            if (N == N->parent->left)
+                N->parent->left = C;
+            else
+                N->parent->right = C;
+        }
         else
-            N->parent->right = C;
+        {
+            C->parent = N->parent;
+            if (N == N->parent->left)
+                N->parent->left = C;
+            else
+                N->parent->right = C;
+            rotationD(t, C);
+            if (C == C->parent->left)
+                C->parent->left = t->nil;
+            else
+                C->parent->right = t->nil;
+        }       
     }
-    else
-    {
-        C->parent = N->parent;
-        if (N == N->parent->left)
-            N->parent->left = C;
-        else
-            N->parent->right = C;
-        rotationD(t, C);
-        if (C == C->parent->left)
-            C->parent->left = t->nil;
-        else
-            C->parent->right = t->nil;
-    }  
     free(N);
     if (C->left == NULL)
         free(C);
@@ -289,7 +293,7 @@ void rotationD(rbtree *t, node_t *N)
     if (B->color == RBTREE_RED)
     {
         B->color = RBTREE_BLACK;
-        B->parent->color = RBTREE_RED;
+        N->parent->color = RBTREE_RED;
         if (B == B->parent->left)
             cw(t, B);
         else
@@ -301,7 +305,7 @@ void rotationD(rbtree *t, node_t *N)
 void rebalance(rbtree *t, node_t *N)
 {
     node_t *B = bro(t, N);
-    if (N->parent->color == RBTREE_BLACK && B->color == RBTREE_BLACK && B->left == t->nil && B->right == t->nil)
+    if (N->parent->color == RBTREE_BLACK && B->color == RBTREE_BLACK && B->left->color == RBTREE_BLACK && B->right->color == RBTREE_BLACK)
     {   
         B->color = RBTREE_RED;
         rotationD(t, N->parent);
@@ -313,7 +317,7 @@ void rebalance(rbtree *t, node_t *N)
 void replace(rbtree *t, node_t *N)
 {
     node_t *B = bro(t, N);
-    if (N->parent->color == RBTREE_RED && B->color == RBTREE_BLACK && B->left == t->nil && B->right == t->nil)
+    if (N->parent->color == RBTREE_RED && B->color == RBTREE_BLACK && B->left->color == RBTREE_BLACK && B->right->color == RBTREE_BLACK)
     {   
         B->color = RBTREE_RED;
         N->parent->color = RBTREE_BLACK;
@@ -416,7 +420,7 @@ int rbtree_erase(rbtree *t, node_t *p)
         N->key = D->key;
     }
     else
-        D = N;  
+        D = N; 
     delete(t, D);
     return 0;
 }
@@ -435,4 +439,3 @@ void testprint(const rbtree *t, node_t *N)
     if (N->right != t->nil)
         testprint(t, N->right);
 }
-
